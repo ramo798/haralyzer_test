@@ -1,18 +1,38 @@
 from haralyzer import HarParser
 import json
 
-har_parser = HarParser.from_file("twitter.com.har")
+with open('202406090358-12.har', 'r', encoding='utf-8-sig') as f:
+    har_parser = HarParser(json.loads(f.read()))
 
+all_tweet = []
 for page in har_parser.pages:
-    entries = page.entries
-    for entry in entries:
-        if 'Bookmarks?' in entry.request.url:
-            # print(entry.response.text)
-            json_data = json.loads(entry.response.text)
-            # print(json.dumps(json_data, ensure_ascii=False, indent=2))
-            for instruction in json_data['data']['bookmark_timeline_v2']['timeline']['instructions']:
-              for entry in instruction['entries']:
-                print(json.dumps(entry['content']['itemContent']['tweet_results']['result'], ensure_ascii=False, indent=2))
-                # a = entry['content']['itemContent']['tweet_results']['result']['quoted_status_result']['result']['legacy']['full_text']
-                # print(json.dumps(a, ensure_ascii=False, indent=2))
-            break
+  entries = page.entries
+  for entry in entries:
+      if 'Bookmarks?' in entry.request.url:
+          json_data = json.loads(entry.response.text)
+          for instruction in json_data['data']['bookmark_timeline_v2']['timeline']['instructions']:
+            cursor_count = sum(1 for entry in instruction['entries'] if entry['content']['entryType'] == 'TimelineTimelineCursor')
+            tweet_count = 0
+            for i, entry in enumerate(instruction['entries']):
+              if entry['content']['entryType'] == 'TimelineTimelineCursor':
+                continue
+              text = ''
+              try:
+                text = entry['content']['itemContent']['tweet_results']['result']['legacy']['full_text']
+              except:
+                pass
+
+              try:
+                text = entry['content']['itemContent']['tweet_results']['result']['tweet']['legacy']['full_text']
+              except:
+                pass
+
+              print(text)
+              print('-------------------')
+              tweet_count += 1
+              all_tweet.append(text)
+
+          if len(instruction['entries']) - cursor_count != tweet_count:
+            print('sdiouhvslodihvsoidhvsiodhvosihdvosihdvoishdvioh')
+
+print(len(all_tweet))
